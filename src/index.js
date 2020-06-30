@@ -8,7 +8,6 @@ const r = 15, height = 500, width = 500;
 
 myBst.insert(3);
 
-
 const children = (d) => {
   let children = [];
   if (d.left){
@@ -25,13 +24,14 @@ const children = (d) => {
   }
   return children;
 }
-
+//Helper functions
 const createTree = bst => {
   const root = d3.hierarchy(bst,children)
   root.dx = width;
   root.dy = 50;
   return d3.tree().nodeSize([35, 50])(root);
 };
+
 // Hide none existing nodes
 const hideUndefinedNodes = (nodes) => (
   nodes.filter((d,i) => d.data.data === Infinity).attr('opacity', 0)
@@ -39,7 +39,6 @@ const hideUndefinedNodes = (nodes) => (
 const showDefinedNodes = (nodes) => {
   const n = nodes.filter((d,i) => d.data.data !== Infinity).attr('opacity', 1)
   n.select('text').text(d => d.data.data)
-
 };
 
 const findDuplicates = () => {
@@ -77,6 +76,32 @@ const showDefinedLinks = (links) => {
   links.filter((d,i) => (d.source.data.data !== Infinity && d.target.data.data !== Infinity)).attr('opacity', 1)
 };
 
+const insertSimulation = (node, value) => {
+  const circle = d3.selectAll('circle').filter((d,i) =>{
+    return (d.data.id === node.data.id)
+  })
+
+  console.log(circle)
+  const t = d3.transition()
+    .duration(800)
+
+  circle.attr("fill", "yellow")
+    .transition(t)
+    .attr("fill", 'white')
+
+  if(node.data.data === value){
+    return;
+  }
+  if(value < node.data.data){
+    insertSimulation(node.children[0], value);
+  }
+
+  if(value > node.data.data){
+    insertSimulation(node.children[1], value);
+  }
+}
+
+//Helpers end
 let root = createTree(myBst.root);
 let x0 = Infinity;
 let x1 = -x0;
@@ -139,12 +164,14 @@ const text = node.append("text")
 
 
 d3.selectAll("#add").on('click', () => {
-  myBst.insert(Math.floor(Math.random() * 40));
-  //console.log(myBst);
+  const newValue = Math.floor(Math.random() * 40);
+  myBst.insert(newValue);
+
   root = createTree(myBst.root);
+  insertSimulation(root, newValue);
   const nodes = g.select('.nodes').selectAll('g').data(root.descendants(), getKeyNodes);
   const links = g.select('.links').selectAll("path").data(root.links(), getKeyLinks);
-  console.log(root.links())
+
 
   //exit
   nodes.exit().remove();
@@ -179,7 +206,6 @@ d3.selectAll("#add").on('click', () => {
   //entering nodes
  const newNodes = nodes.enter()
     .append("g")
-    .attr("transform", d => `translate(${d.x},${d.y})`)
 
 
   newNodes.append("circle")
@@ -202,12 +228,7 @@ d3.selectAll("#add").on('click', () => {
     .attr("stroke-width", 1)
     .text(d => d.data.data);
 
-  //console.log(findDuplicates());
-
-  //exits
-
-
-
+newNodes.attr("transform", d => `translate(${d.x},${d.y})`)
 
 })
 
